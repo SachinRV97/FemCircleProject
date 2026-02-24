@@ -18,7 +18,10 @@ public sealed class AccountController : Controller
     [HttpGet]
     public IActionResult Register()
     {
-        return View(new RegisterViewModel());
+        return View(new RegisterViewModel
+        {
+            AcceptTerms = true
+        });
     }
 
     [AllowAnonymous]
@@ -26,6 +29,19 @@ public sealed class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel model, CancellationToken cancellationToken)
     {
+        if (Request.HasFormContentType && Request.Form.TryGetValue(nameof(RegisterViewModel.AcceptTerms), out var acceptValues))
+        {
+            bool accepted = acceptValues.Any(v =>
+                string.Equals(v, "true", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(v, "on", StringComparison.OrdinalIgnoreCase));
+
+            model.AcceptTerms = accepted;
+            if (accepted)
+            {
+                ModelState.Remove(nameof(RegisterViewModel.AcceptTerms));
+            }
+        }
+
         if (!ModelState.IsValid)
         {
             return View(model);
