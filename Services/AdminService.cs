@@ -1,88 +1,101 @@
+using FemCircleProject.Data;
 using FemCircleProject.ViewModels.Admin;
+using Microsoft.EntityFrameworkCore;
 
 namespace FemCircleProject.Services;
 
 public sealed class AdminService : IAdminService
 {
-    private readonly InMemoryAppStore _store;
+    private readonly FemCircleDbContext _dbContext;
 
-    public AdminService(InMemoryAppStore store)
+    public AdminService(FemCircleDbContext dbContext)
     {
-        _store = store;
+        _dbContext = dbContext;
     }
 
-    public Task<AdminDashboardViewModel> GetDashboardAsync(CancellationToken cancellationToken = default)
+    public async Task<AdminDashboardViewModel> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<UserRecord> users = _store.GetUsersSnapshot();
-        IReadOnlyList<ProductRecord> products = _store.GetProductsSnapshot();
+        int totalUsers = await _dbContext.Users.CountAsync(cancellationToken);
+        int activeListings = await _dbContext.Products.CountAsync(p => p.IsApproved, cancellationToken);
+        int pendingModerationCount = await _dbContext.Products.CountAsync(p => !p.IsApproved, cancellationToken);
 
-        AdminDashboardViewModel model = new()
-        {
-            TotalUsers = users.Count,
-            ActiveListings = products.Count(p => p.IsApproved),
-            PendingModerationCount = products.Count(p => !p.IsApproved),
-            CompletedOrders = 0,
-            RecentListings = products
-                .OrderByDescending(p => p.CreatedOnUtc)
-                .Take(6)
-                .Select(ToAdminProductSummary)
-                .ToList(),
-            NewlyRegisteredUsers = users
-                .OrderByDescending(u => u.RegisteredOnUtc)
-                .Take(6)
-                .Select(ToAdminUserSummary)
-                .ToList()
-        };
+        List<AdminProductSummaryViewModel> recentListings = await _dbContext.Products
+            .AsNoTracking()
+            .OrderByDescending(p => p.CreatedOnUtc)
+            .Take(6)
+            .Select(p => new AdminProductSummaryViewModel
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Category = p.Category,
+                ListingType = p.ListingType,
+                SellerUserName = p.Seller.UserName,
+                IsApproved = p.IsApproved,
+                CreatedOnUtc = p.CreatedOnUtc
+            })
+            .ToListAsync(cancellationToken);
 
-        return Task.FromResult(model);
-    }
-
-    public Task<IReadOnlyList<AdminUserSummaryViewModel>> GetUsersAsync(CancellationToken cancellationToken = default)
-    {
-        IReadOnlyList<AdminUserSummaryViewModel> users = _store.GetUsersSnapshot()
+        List<AdminUserSummaryViewModel> newlyRegisteredUsers = await _dbContext.Users
+            .AsNoTracking()
             .OrderByDescending(u => u.RegisteredOnUtc)
-            .Select(ToAdminUserSummary)
-            .ToList();
+            .Take(6)
+            .Select(u => new AdminUserSummaryViewModel
+            {
+                Id = u.Id.ToString(),
+                FullName = u.FullName,
+                UserName = u.UserName,
+                Email = u.Email,
+                IsVerified = u.IsVerified,
+                IsBlocked = u.IsBlocked,
+                RegisteredOnUtc = u.RegisteredOnUtc
+            })
+            .ToListAsync(cancellationToken);
 
-        return Task.FromResult(users);
+        return new AdminDashboardViewModel
+        {
+            TotalUsers = totalUsers,
+            ActiveListings = activeListings,
+            PendingModerationCount = pendingModerationCount,
+            CompletedOrders = 0,
+            RecentListings = recentListings,
+            NewlyRegisteredUsers = newlyRegisteredUsers
+        };
     }
 
-    public Task<IReadOnlyList<AdminProductSummaryViewModel>> GetPendingProductsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<AdminUserSummaryViewModel>> GetUsersAsync(CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<AdminProductSummaryViewModel> pending = _store.GetProductsSnapshot()
+        return await _dbContext.Users
+            .AsNoTracking()
+            .OrderByDescending(u => u.RegisteredOnUtc)
+            .Select(u => new AdminUserSummaryViewModel
+            {
+                Id = u.Id.ToString(),
+                FullName = u.FullName,
+                UserName = u.UserName,
+                Email = u.Email,
+                IsVerified = u.IsVerified,
+                IsBlocked = u.IsBlocked,
+                RegisteredOnUtc = u.RegisteredOnUtc
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AdminProductSummaryViewModel>> GetPendingProductsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Products
+            .AsNoTracking()
             .Where(p => !p.IsApproved)
             .OrderByDescending(p => p.CreatedOnUtc)
-            .Select(ToAdminProductSummary)
-            .ToList();
-
-        return Task.FromResult(pending);
-    }
-
-    private static AdminUserSummaryViewModel ToAdminUserSummary(UserRecord user)
-    {
-        return new AdminUserSummaryViewModel
-        {
-            Id = user.Id.ToString(),
-            FullName = user.FullName,
-            UserName = user.UserName,
-            Email = user.Email,
-            IsVerified = user.IsVerified,
-            IsBlocked = user.IsBlocked,
-            RegisteredOnUtc = user.RegisteredOnUtc
-        };
-    }
-
-    private static AdminProductSummaryViewModel ToAdminProductSummary(ProductRecord product)
-    {
-        return new AdminProductSummaryViewModel
-        {
-            Id = product.Id,
-            Title = product.Title,
-            Category = product.Category,
-            ListingType = product.ListingType,
-            SellerUserName = product.SellerUserName,
-            IsApproved = product.IsApproved,
-            CreatedOnUtc = product.CreatedOnUtc
-        };
+            .Select(p => new AdminProductSummaryViewModel
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Category = p.Category,
+                ListingType = p.ListingType,
+                SellerUserName = p.Seller.UserName,
+                IsApproved = p.IsApproved,
+                CreatedOnUtc = p.CreatedOnUtc
+            })
+            .ToListAsync(cancellationToken);
     }
 }

@@ -1,42 +1,91 @@
 using System.Security.Claims;
+using FemCircleProject.Data;
+using FemCircleProject.Data.Entities;
 using FemCircleProject.ViewModels.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace FemCircleProject.Services;
 
 public sealed class AccountService : IAccountService
 {
-    private readonly InMemoryAppStore _store;
+    private readonly FemCircleDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IPasswordHasher<AppUser> _passwordHasher;
 
-    public AccountService(InMemoryAppStore store, IHttpContextAccessor httpContextAccessor)
+    public AccountService(
+        FemCircleDbContext dbContext,
+        IHttpContextAccessor httpContextAccessor,
+        IPasswordHasher<AppUser> passwordHasher)
     {
-        _store = store;
+        _dbContext = dbContext;
         _httpContextAccessor = httpContextAccessor;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<RegisterResult> RegisterAsync(RegisterViewModel model, CancellationToken cancellationToken = default)
     {
-        if (!_store.TryCreateUser(model, out UserRecord? createdUser, out string? errorMessage))
+        string userName = model.UserName.Trim();
+        string email = model.Email.Trim().ToLowerInvariant();
+
+        if (await _dbContext.Users.AnyAsync(u => u.UserName == userName, cancellationToken))
         {
-            return new RegisterResult(false, errorMessage);
+            return new RegisterResult(false, "Username already exists.");
         }
 
-        if (createdUser is not null)
+        if (await _dbContext.Users.AnyAsync(u => u.Email == email, cancellationToken))
         {
-            await SignInInternalAsync(createdUser, false);
+            return new RegisterResult(false, "Email already exists.");
         }
 
+        AppUser user = new()
+        {
+            FullName = model.FullName.Trim(),
+            UserName = userName,
+            Email = email,
+            PhoneNumber = string.IsNullOrWhiteSpace(model.PhoneNumber) ? null : model.PhoneNumber.Trim(),
+            City = string.IsNullOrWhiteSpace(model.City) ? null : model.City.Trim(),
+            IsVerified = true,
+            IsBlocked = false,
+            IsAdmin = false,
+            RegisteredOnUtc = DateTime.UtcNow
+        };
+
+        user.PasswordHash = _passwordHasher.HashPassword(user, model.Password);
+
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await SignInInternalAsync(user, false);
         return new RegisterResult(true);
     }
 
     public async Task<bool> PasswordSignInAsync(LoginViewModel model, CancellationToken cancellationToken = default)
     {
-        UserRecord? user = _store.GetUserForSignIn(model.UsernameOrEmail.Trim(), model.Password);
+        string loginValue = model.UsernameOrEmail.Trim();
+        string normalizedEmail = loginValue.ToLowerInvariant();
+
+        AppUser? user = await _dbContext.Users.FirstOrDefaultAsync(
+            u => u.UserName == loginValue || u.Email == normalizedEmail,
+            cancellationToken);
+
         if (user is null || user.IsBlocked)
         {
             return false;
+        }
+
+        PasswordVerificationResult verifyResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, model.Password);
+        if (verifyResult == PasswordVerificationResult.Failed)
+        {
+            return false;
+        }
+
+        if (verifyResult == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            user.PasswordHash = _passwordHasher.HashPassword(user, model.Password);
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
         await SignInInternalAsync(user, model.RememberMe);
@@ -53,7 +102,7 @@ public sealed class AccountService : IAccountService
         await _httpContextAccessor.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     }
 
-    private async Task SignInInternalAsync(UserRecord user, bool rememberMe)
+    private async Task SignInInternalAsync(AppUser user, bool rememberMe)
     {
         if (_httpContextAccessor.HttpContext is null)
         {

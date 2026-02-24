@@ -1,41 +1,43 @@
+using FemCircleProject.Data;
+using FemCircleProject.Data.Entities;
 using FemCircleProject.ViewModels.Product;
+using Microsoft.EntityFrameworkCore;
 
 namespace FemCircleProject.Services;
 
 public sealed class ProductService : IProductService
 {
-    private readonly InMemoryAppStore _store;
+    private readonly FemCircleDbContext _dbContext;
 
-    public ProductService(InMemoryAppStore store)
+    public ProductService(FemCircleDbContext dbContext)
     {
-        _store = store;
+        _dbContext = dbContext;
     }
 
-    public Task<ProductIndexViewModel> BuildIndexAsync(ProductSearchViewModel search, CancellationToken cancellationToken = default)
+    public async Task<ProductIndexViewModel> BuildIndexAsync(ProductSearchViewModel search, CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<ProductRecord> products = _store.GetProductsSnapshot();
-        Dictionary<string, string> sellerNames = _store.GetUsersSnapshot()
-            .ToDictionary(u => u.UserName, u => u.FullName, StringComparer.OrdinalIgnoreCase);
-
-        IEnumerable<ProductRecord> query = products.Where(p => p.IsApproved);
+        IQueryable<Product> query = _dbContext.Products
+            .AsNoTracking()
+            .Where(p => p.IsApproved);
 
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
-            string keyword = search.Query.Trim();
+            string keyword = $"%{search.Query.Trim()}%";
             query = query.Where(p =>
-                p.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                p.Description.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+                EF.Functions.Like(p.Title, keyword) ||
+                EF.Functions.Like(p.Description, keyword));
         }
 
         if (!string.IsNullOrWhiteSpace(search.Category))
         {
-            string category = search.Category.Trim();
-            query = query.Where(p => p.Category.Contains(category, StringComparison.OrdinalIgnoreCase));
+            string category = $"%{search.Category.Trim()}%";
+            query = query.Where(p => EF.Functions.Like(p.Category, category));
         }
 
         if (search.ListingType.HasValue)
         {
-            query = query.Where(p => p.ListingType == search.ListingType.Value);
+            ProductListingType listingType = search.ListingType.Value;
+            query = query.Where(p => p.ListingType == listingType);
         }
 
         if (search.MinPrice.HasValue)
@@ -57,7 +59,9 @@ public sealed class ProductService : IProductService
             _ => query.OrderByDescending(p => p.CreatedOnUtc)
         };
 
-        List<ProductListItemViewModel> items = query
+        int totalCount = await query.CountAsync(cancellationToken);
+
+        List<ProductListItemViewModel> products = await query
             .Select(p => new ProductListItemViewModel
             {
                 Id = p.Id,
@@ -66,54 +70,61 @@ public sealed class ProductService : IProductService
                 ListingType = p.ListingType,
                 Price = p.Price,
                 ItemCondition = p.ItemCondition,
-                SellerDisplayName = sellerNames.TryGetValue(p.SellerUserName, out string? fullName) ? fullName : p.SellerUserName,
+                SellerDisplayName = p.Seller.FullName,
                 City = p.City,
                 PostedOnUtc = p.CreatedOnUtc
             })
-            .ToList();
+            .ToListAsync(cancellationToken);
 
-        ProductIndexViewModel model = new()
+        return new ProductIndexViewModel
         {
             Search = search,
-            Products = items,
-            TotalCount = items.Count
+            Products = products,
+            TotalCount = totalCount
         };
-
-        return Task.FromResult(model);
     }
 
     public Task<ProductDetailsViewModel?> GetDetailsAsync(int productId, CancellationToken cancellationToken = default)
     {
-        ProductRecord? product = _store.GetProductById(productId);
-        if (product is null)
-        {
-            return Task.FromResult<ProductDetailsViewModel?>(null);
-        }
-
-        UserRecord? seller = _store.GetUserByUserName(product.SellerUserName);
-        ProductDetailsViewModel model = new()
-        {
-            Id = product.Id,
-            Title = product.Title,
-            Description = product.Description,
-            Category = product.Category,
-            ListingType = product.ListingType,
-            Price = product.Price,
-            ItemCondition = product.ItemCondition,
-            Quantity = product.Quantity,
-            City = product.City,
-            ImageUrl = product.ImageUrl,
-            SellerDisplayName = seller?.FullName ?? product.SellerUserName,
-            PostedOnUtc = product.CreatedOnUtc
-        };
-
-        return Task.FromResult<ProductDetailsViewModel?>(model);
+        return _dbContext.Products
+            .AsNoTracking()
+            .Where(p => p.Id == productId)
+            .Select(p => new ProductDetailsViewModel
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Description = p.Description,
+                Category = p.Category,
+                ListingType = p.ListingType,
+                Price = p.Price,
+                ItemCondition = p.ItemCondition,
+                Quantity = p.Quantity,
+                City = p.City,
+                ImageUrl = p.ImageUrl,
+                SellerDisplayName = p.Seller.FullName,
+                PostedOnUtc = p.CreatedOnUtc
+            })
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public Task<int> CreateAsync(ProductCreateViewModel model, string createdByUserName, CancellationToken cancellationToken = default)
+    public async Task<int> CreateAsync(ProductCreateViewModel model, string createdByUserName, CancellationToken cancellationToken = default)
     {
-        string owner = string.IsNullOrWhiteSpace(createdByUserName) ? "admin" : createdByUserName;
-        ProductRecord record = new()
+        string ownerUserName = string.IsNullOrWhiteSpace(createdByUserName) ? "admin" : createdByUserName.Trim();
+
+        AppUser? seller = await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.UserName == ownerUserName, cancellationToken);
+
+        seller ??= await _dbContext.Users
+            .OrderByDescending(u => u.IsAdmin)
+            .ThenBy(u => u.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (seller is null)
+        {
+            throw new InvalidOperationException("No users are available to own a product listing.");
+        }
+
+        Product product = new()
         {
             Title = model.Title.Trim(),
             Description = model.Description.Trim(),
@@ -124,24 +135,28 @@ public sealed class ProductService : IProductService
             Quantity = model.Quantity,
             City = model.City.Trim(),
             ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl.Trim(),
-            SellerUserName = owner,
-            CreatedOnUtc = DateTime.UtcNow,
-            IsApproved = true
+            SellerId = seller.Id,
+            IsApproved = true,
+            CreatedOnUtc = DateTime.UtcNow
         };
 
-        int productId = _store.AddProduct(record);
-        return Task.FromResult(productId);
+        _dbContext.Products.Add(product);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return product.Id;
     }
 
-    public Task<ProductEditViewModel?> GetForEditAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default)
+    public async Task<ProductEditViewModel?> GetForEditAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default)
     {
-        ProductRecord? product = _store.GetProductById(productId);
-        if (product is null || !CanManage(product, requestedByUserName))
+        Product? product = await _dbContext.Products
+            .Include(p => p.Seller)
+            .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+
+        if (product is null || !await CanManageAsync(product, requestedByUserName, cancellationToken))
         {
-            return Task.FromResult<ProductEditViewModel?>(null);
+            return null;
         }
 
-        ProductEditViewModel model = new()
+        return new ProductEditViewModel
         {
             Id = product.Id,
             Title = product.Title,
@@ -154,67 +169,70 @@ public sealed class ProductService : IProductService
             City = product.City,
             ImageUrl = product.ImageUrl
         };
-
-        return Task.FromResult<ProductEditViewModel?>(model);
     }
 
-    public Task<bool> UpdateAsync(ProductEditViewModel model, string? requestedByUserName, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(ProductEditViewModel model, string? requestedByUserName, CancellationToken cancellationToken = default)
     {
-        ProductRecord? existing = _store.GetProductById(model.Id);
-        if (existing is null || !CanManage(existing, requestedByUserName))
+        Product? product = await _dbContext.Products
+            .Include(p => p.Seller)
+            .FirstOrDefaultAsync(p => p.Id == model.Id, cancellationToken);
+
+        if (product is null || !await CanManageAsync(product, requestedByUserName, cancellationToken))
         {
-            return Task.FromResult(false);
+            return false;
         }
 
-        existing.Title = model.Title.Trim();
-        existing.Description = model.Description.Trim();
-        existing.Category = model.Category.Trim();
-        existing.ListingType = model.ListingType;
-        existing.Price = NormalizePrice(model.ListingType, model.Price);
-        existing.ItemCondition = model.ItemCondition.Trim();
-        existing.Quantity = model.Quantity;
-        existing.City = model.City.Trim();
-        existing.ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl.Trim();
+        product.Title = model.Title.Trim();
+        product.Description = model.Description.Trim();
+        product.Category = model.Category.Trim();
+        product.ListingType = model.ListingType;
+        product.Price = NormalizePrice(model.ListingType, model.Price);
+        product.ItemCondition = model.ItemCondition.Trim();
+        product.Quantity = model.Quantity;
+        product.City = model.City.Trim();
+        product.ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl.Trim();
 
-        bool updated = _store.UpdateProduct(existing);
-        return Task.FromResult(updated);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
-    public Task<bool> DeleteAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default)
     {
-        ProductRecord? existing = _store.GetProductById(productId);
-        if (existing is null || !CanManage(existing, requestedByUserName))
+        Product? product = await _dbContext.Products
+            .Include(p => p.Seller)
+            .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+
+        if (product is null || !await CanManageAsync(product, requestedByUserName, cancellationToken))
         {
-            return Task.FromResult(false);
+            return false;
         }
 
-        bool deleted = _store.DeleteProduct(productId);
-        return Task.FromResult(deleted);
+        _dbContext.Products.Remove(product);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
-    private bool CanManage(ProductRecord product, string? requestedByUserName)
+    private async Task<bool> CanManageAsync(Product product, string? requestedByUserName, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(requestedByUserName))
         {
             return false;
         }
 
-        if (string.Equals(product.SellerUserName, requestedByUserName, StringComparison.OrdinalIgnoreCase))
+        string normalizedUserName = requestedByUserName.Trim();
+
+        if (string.Equals(product.Seller.UserName, normalizedUserName, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
 
-        UserRecord? user = _store.GetUserByUserName(requestedByUserName);
-        return user?.IsAdmin == true;
+        return await _dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(u => u.UserName == normalizedUserName && u.IsAdmin, cancellationToken);
     }
 
     private static decimal? NormalizePrice(ProductListingType listingType, decimal? rawPrice)
     {
-        if (listingType == ProductListingType.Donate)
-        {
-            return 0;
-        }
-
-        return rawPrice;
+        return listingType == ProductListingType.Donate ? 0 : rawPrice;
     }
 }
