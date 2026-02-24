@@ -7,8 +7,8 @@
     <div class="row g-4 align-items-stretch">
         <div class="col-lg-8">
             <div class="fem-card p-4 p-md-5 h-100">
-                <h1 class="h3 fw-bold mb-1">Join FemCircle</h1>
-                <p class="text-secondary mb-4">Create your member profile to access the women-only marketplace.</p>
+                <h1 class="h3 fw-bold mb-1">Create Your FemCircle Account</h1>
+                <p class="text-secondary mb-4">Register to buy, sell, donate, and exchange products in a verified women-only community.</p>
 
                 <form asp-action="Register" method="post" novalidate>
                     <div asp-validation-summary="All" class="alert alert-danger mb-3"></div>
@@ -16,45 +16,45 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label asp-for="FullName" class="form-label"></label>
-                            <input asp-for="FullName" class="form-control" />
+                            <input asp-for="FullName" class="form-control" autocomplete="name" />
                             <span asp-validation-for="FullName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="UserName" class="form-label"></label>
-                            <input asp-for="UserName" class="form-control" />
+                            <input asp-for="UserName" class="form-control" autocomplete="username" />
                             <span asp-validation-for="UserName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Email" class="form-label"></label>
-                            <input asp-for="Email" class="form-control" />
+                            <input asp-for="Email" class="form-control" autocomplete="email" />
                             <span asp-validation-for="Email" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="PhoneNumber" class="form-label"></label>
-                            <input asp-for="PhoneNumber" class="form-control" />
+                            <input asp-for="PhoneNumber" class="form-control" autocomplete="tel" />
                             <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="City" class="form-label"></label>
-                            <input asp-for="City" class="form-control" />
+                            <input asp-for="City" class="form-control" autocomplete="address-level2" />
                             <span asp-validation-for="City" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6"></div>
                         <div class="col-md-6">
                             <label asp-for="Password" class="form-label"></label>
-                            <input asp-for="Password" class="form-control" />
+                            <input asp-for="Password" class="form-control" autocomplete="new-password" />
                             <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="ConfirmPassword" class="form-label"></label>
-                            <input asp-for="ConfirmPassword" class="form-control" />
+                            <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
                             <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                         </div>
                     </div>
 
                     <div class="form-check mt-4">
-                        <input asp-for="AcceptTerms" class="form-check-input" />
-                        <label asp-for="AcceptTerms" class="form-check-label"></label>
+                        <input id="AcceptTerms" name="AcceptTerms" value="true" type="checkbox" class="form-check-input" @(Model.AcceptTerms ? "checked" : null) />
+                        <label for="AcceptTerms" class="form-check-label">I accept terms and conditions</label>
                         <span asp-validation-for="AcceptTerms" class="text-danger small d-block"></span>
                     </div>
 
@@ -68,13 +68,13 @@
 
         <div class="col-lg-4">
             <aside class="auth-side h-100">
-                <h2 class="h5 fw-bold mb-3">Member Benefits</h2>
+                <h2 class="h5 fw-bold mb-3">Why Join FemCircle</h2>
                 <ul class="small text-secondary mb-3">
-                    <li class="mb-2">Post your own listings in minutes</li>
-                    <li class="mb-2">Discover curated items from women in your city</li>
-                    <li class="mb-2">Support donation and sustainable exchange</li>
+                    <li class="mb-2">Buy and sell safely in a women-only marketplace</li>
+                    <li class="mb-2">Request booking and track approvals clearly</li>
+                    <li class="mb-2">Support reuse through donation and exchange</li>
                 </ul>
-                <div class="badge badge-soft">Women-only access model</div>
+                <div class="badge badge-soft">Verified women-only access</div>
             </aside>
         </div>
     </div>

@@ -29,17 +29,19 @@ public sealed class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel model, CancellationToken cancellationToken)
     {
+        bool accepted = model.AcceptTerms;
+
         if (Request.HasFormContentType && Request.Form.TryGetValue(nameof(RegisterViewModel.AcceptTerms), out var acceptValues))
         {
-            bool accepted = acceptValues.Any(v =>
+            accepted = acceptValues.Any(v =>
                 string.Equals(v, "true", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(v, "on", StringComparison.OrdinalIgnoreCase));
+        }
 
-            model.AcceptTerms = accepted;
-            if (accepted)
-            {
-                ModelState.Remove(nameof(RegisterViewModel.AcceptTerms));
-            }
+        model.AcceptTerms = accepted;
+        if (!accepted)
+        {
+            ModelState.AddModelError(nameof(RegisterViewModel.AcceptTerms), "You must accept the terms and conditions.");
         }
 
         if (!ModelState.IsValid)

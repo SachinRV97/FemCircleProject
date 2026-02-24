@@ -36,8 +36,6 @@ public sealed class RegisterViewModel
     [Compare(nameof(Password), ErrorMessage = "Password and confirm password must match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
-    [Range(typeof(bool), "true", "true", ErrorMessage = "You must accept the terms and conditions.")]
     [Display(Name = "I accept terms and conditions")]
     public bool AcceptTerms { get; set; }
 }
-
