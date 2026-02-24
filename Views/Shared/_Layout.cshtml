@@ -2,6 +2,7 @@
     string? currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     string? currentAction = ViewContext.RouteData.Values["action"]?.ToString();
     bool isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+    bool isAdmin = User?.IsInRole("Admin") ?? false;
     string userDisplayName = User?.Identity?.Name ?? "Member";
 }
 <!DOCTYPE html>
@@ -39,9 +40,12 @@
                         <li class="nav-item">
                             <a class="nav-link @(currentController == "Products" && currentAction == "Create" ? "active" : string.Empty)" asp-controller="Products" asp-action="Create">List Item</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link @(currentController == "Admin" ? "active" : string.Empty)" asp-controller="Admin" asp-action="Dashboard">Admin</a>
-                        </li>
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @(currentController == "Admin" ? "active" : string.Empty)" asp-controller="Admin" asp-action="Dashboard">Admin</a>
+                            </li>
+                        }
                     </ul>
 
                     <div class="d-flex align-items-center gap-2">

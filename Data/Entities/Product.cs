@@ -15,8 +15,12 @@ public sealed class Product
     public string City { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
     public bool IsApproved { get; set; }
+    public bool IsSold { get; set; }
+    public DateTime? SoldOnUtc { get; set; }
     public DateTime CreatedOnUtc { get; set; }
 
     public int SellerId { get; set; }
     public AppUser Seller { get; set; } = null!;
+    public int? BoughtByUserId { get; set; }
+    public AppUser? BoughtByUser { get; set; }
 }

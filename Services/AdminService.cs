@@ -18,8 +18,9 @@ public sealed class AdminService : IAdminService
     public async Task<AdminDashboardViewModel> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
         int totalUsers = await _dbContext.Users.CountAsync(cancellationToken);
-        int activeListings = await _dbContext.Products.CountAsync(p => p.IsApproved, cancellationToken);
+        int activeListings = await _dbContext.Products.CountAsync(p => p.IsApproved && !p.IsSold, cancellationToken);
         int pendingModerationCount = await _dbContext.Products.CountAsync(p => !p.IsApproved, cancellationToken);
+        int completedOrders = await _dbContext.Products.CountAsync(p => p.IsSold, cancellationToken);
 
         List<AdminProductSummaryViewModel> recentListings = await _dbContext.Products
             .AsNoTracking()
@@ -40,7 +41,7 @@ public sealed class AdminService : IAdminService
             TotalUsers = totalUsers,
             ActiveListings = activeListings,
             PendingModerationCount = pendingModerationCount,
-            CompletedOrders = 0,
+            CompletedOrders = completedOrders,
             RecentListings = recentListings,
             NewlyRegisteredUsers = newlyRegisteredUsers
         };

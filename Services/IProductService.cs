@@ -10,4 +10,5 @@ public interface IProductService
     Task<ProductEditViewModel?> GetForEditAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default);
     Task<bool> UpdateAsync(ProductEditViewModel model, string? requestedByUserName, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default);
+    Task<bool> BookAsync(int productId, string? buyerUserName, CancellationToken cancellationToken = default);
 }

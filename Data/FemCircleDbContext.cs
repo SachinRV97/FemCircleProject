@@ -43,10 +43,16 @@ public sealed class FemCircleDbContext : DbContext
             entity.Property(x => x.City).HasMaxLength(80).IsRequired();
             entity.Property(x => x.ImageUrl).HasMaxLength(600);
             entity.Property(x => x.Price).HasPrecision(18, 2);
+            entity.Property(x => x.IsSold).HasDefaultValue(false);
 
             entity.HasOne(x => x.Seller)
                 .WithMany(x => x.Products)
                 .HasForeignKey(x => x.SellerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.BoughtByUser)
+                .WithMany(x => x.BoughtProducts)
+                .HasForeignKey(x => x.BoughtByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

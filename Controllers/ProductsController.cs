@@ -44,9 +44,31 @@ public sealed class ProductsController : Controller
         bool isAdmin = User.IsInRole("Admin");
         bool isOwner = !string.IsNullOrWhiteSpace(currentUserName) &&
                        string.Equals(model.SellerUserName, currentUserName, StringComparison.OrdinalIgnoreCase);
+        bool isBuyer = !string.IsNullOrWhiteSpace(currentUserName) &&
+                       !string.IsNullOrWhiteSpace(model.BoughtByUserName) &&
+                       string.Equals(model.BoughtByUserName, currentUserName, StringComparison.OrdinalIgnoreCase);
         model.CanManage = isAdmin || isOwner;
+        model.IsBoughtByCurrentUser = isBuyer;
+        model.CanBook = (User.Identity?.IsAuthenticated ?? false) && !isAdmin && !isOwner && !model.IsSold;
 
         return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Book(int id, CancellationToken cancellationToken)
+    {
+        if (User.IsInRole("Admin"))
+        {
+            return Forbid();
+        }
+
+        bool success = await _productService.BookAsync(id, User.Identity?.Name, cancellationToken);
+        TempData[success ? "ProductSuccess" : "ProductError"] = success
+            ? "Product booked successfully. It is now marked as sold."
+            : "Unable to book this product. It may already be sold or unavailable.";
+
+        return RedirectToAction(nameof(Details), new { id });
     }
 
     [HttpGet]

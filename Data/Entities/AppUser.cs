@@ -15,4 +15,5 @@ public sealed class AppUser
     public DateTime RegisteredOnUtc { get; set; }
 
     public ICollection<Product> Products { get; set; } = new List<Product>();
+    public ICollection<Product> BoughtProducts { get; set; } = new List<Product>();
 }

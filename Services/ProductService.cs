@@ -18,7 +18,7 @@ public sealed class ProductService : IProductService
     {
         IQueryable<Product> query = _dbContext.Products
             .AsNoTracking()
-            .Where(p => p.IsApproved);
+            .Where(p => p.IsApproved && !p.IsSold);
 
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
@@ -104,7 +104,10 @@ public sealed class ProductService : IProductService
                 ImageUrl = p.ImageUrl,
                 SellerDisplayName = p.Seller.FullName,
                 SellerUserName = p.Seller.UserName,
-                PostedOnUtc = p.CreatedOnUtc
+                PostedOnUtc = p.CreatedOnUtc,
+                IsSold = p.IsSold,
+                SoldOnUtc = p.SoldOnUtc,
+                BoughtByUserName = p.BoughtByUser != null ? p.BoughtByUser.UserName : null
             })
             .FirstOrDefaultAsync(cancellationToken);
     }
@@ -179,7 +182,7 @@ public sealed class ProductService : IProductService
             .Include(p => p.Seller)
             .FirstOrDefaultAsync(p => p.Id == model.Id, cancellationToken);
 
-        if (product is null || !await CanManageAsync(product, requestedByUserName, cancellationToken))
+        if (product is null || product.IsSold || !await CanManageAsync(product, requestedByUserName, cancellationToken))
         {
             return false;
         }
@@ -210,6 +213,46 @@ public sealed class ProductService : IProductService
         }
 
         _dbContext.Products.Remove(product);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> BookAsync(int productId, string? buyerUserName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(buyerUserName))
+        {
+            return false;
+        }
+
+        string normalizedBuyerUserName = buyerUserName.Trim();
+
+        AppUser? buyer = await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.UserName == normalizedBuyerUserName, cancellationToken);
+
+        if (buyer is null || buyer.IsBlocked)
+        {
+            return false;
+        }
+
+        Product? product = await _dbContext.Products
+            .Include(p => p.Seller)
+            .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+
+        if (product is null || !product.IsApproved || product.IsSold)
+        {
+            return false;
+        }
+
+        if (product.SellerId == buyer.Id)
+        {
+            return false;
+        }
+
+        product.IsSold = true;
+        product.SoldOnUtc = DateTime.UtcNow;
+        product.BoughtByUserId = buyer.Id;
+        product.Quantity = 0;
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
