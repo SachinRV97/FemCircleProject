@@ -90,11 +90,30 @@
 
             @if (Model.IsSold)
             {
-                <div class="alert alert-warning mb-0">
-                    This product is no longer available for booking.
-                </div>
+                @if (Model.IsBoughtByCurrentUser)
+                {
+                    <div class="alert alert-success mb-3">
+                        You booked this item on @Model.SoldOnUtc?.ToLocalTime().ToString("dd MMM yyyy hh:mm tt").
+                    </div>
+                }
+                else if (Model.CanUndoBooking)
+                {
+                    <div class="alert alert-info mb-3">
+                        This item is booked by @(Model.BoughtByUserName ?? "Member"). You can undo booking to relist it.
+                    </div>
+                    <form asp-action="UndoBooking" asp-route-id="@Model.Id" method="post" class="mb-3">
+                        <button type="submit" class="btn btn-outline-primary">Undo Booking & Relist</button>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-warning mb-3">
+                        This product is already booked by another user and is not available now.
+                    </div>
+                }
             }
-            else if (Model.CanManage)
+
+            @if (!Model.IsSold && Model.CanManage)
             {
                 <div class="d-flex flex-wrap gap-2">
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-dark">Edit</a>

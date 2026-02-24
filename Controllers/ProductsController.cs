@@ -50,6 +50,19 @@ public sealed class ProductsController : Controller
         model.CanManage = isAdmin || isOwner;
         model.IsBoughtByCurrentUser = isBuyer;
         model.CanBook = (User.Identity?.IsAuthenticated ?? false) && !isAdmin && !isOwner && !model.IsSold;
+        model.CanUndoBooking = model.IsSold && model.CanManage;
+
+        return View(model);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> MyActivity(CancellationToken cancellationToken)
+    {
+        ProductActivityDashboardViewModel? model = await _productService.GetMyActivityAsync(User.Identity?.Name, cancellationToken);
+        if (model is null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
 
         return View(model);
     }
@@ -67,6 +80,18 @@ public sealed class ProductsController : Controller
         TempData[success ? "ProductSuccess" : "ProductError"] = success
             ? "Product booked successfully. It is now marked as sold."
             : "Unable to book this product. It may already be sold or unavailable.";
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UndoBooking(int id, CancellationToken cancellationToken)
+    {
+        bool success = await _productService.UndoBookingAsync(id, User.Identity?.Name, cancellationToken);
+        TempData[success ? "ProductSuccess" : "ProductError"] = success
+            ? "Booking has been undone. Listing is active again."
+            : "Unable to undo booking for this product.";
 
         return RedirectToAction(nameof(Details), new { id });
     }

@@ -2,6 +2,7 @@ using FemCircleProject.Data;
 using FemCircleProject.Data.Entities;
 using FemCircleProject.ViewModels.Product;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace FemCircleProject.Services;
 
@@ -110,6 +111,57 @@ public sealed class ProductService : IProductService
                 BoughtByUserName = p.BoughtByUser != null ? p.BoughtByUser.UserName : null
             })
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<ProductActivityDashboardViewModel?> GetMyActivityAsync(string? currentUserName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(currentUserName))
+        {
+            return null;
+        }
+
+        string normalizedUserName = currentUserName.Trim();
+
+        AppUser? user = await _dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.UserName == normalizedUserName, cancellationToken);
+
+        if (user is null)
+        {
+            return null;
+        }
+
+        List<ProductActivityItemViewModel> ownedItems = await _dbContext.Products
+            .AsNoTracking()
+            .Where(p => p.SellerId == user.Id)
+            .OrderByDescending(p => p.CreatedOnUtc)
+            .Select(ToActivityItem())
+            .ToListAsync(cancellationToken);
+
+        List<ProductActivityItemViewModel> boughtItems = await _dbContext.Products
+            .AsNoTracking()
+            .Where(p => p.BoughtByUserId == user.Id)
+            .OrderByDescending(p => p.SoldOnUtc ?? p.CreatedOnUtc)
+            .Select(ToActivityItem())
+            .ToListAsync(cancellationToken);
+
+        return new ProductActivityDashboardViewModel
+        {
+            UserDisplayName = user.FullName,
+            ActiveListings = ownedItems
+                .Where(x => x.IsApproved && !x.IsSold)
+                .OrderByDescending(x => x.CreatedOnUtc)
+                .ToList(),
+            PendingListings = ownedItems
+                .Where(x => !x.IsApproved)
+                .OrderByDescending(x => x.CreatedOnUtc)
+                .ToList(),
+            SoldListings = ownedItems
+                .Where(x => x.IsSold)
+                .OrderByDescending(x => x.SoldOnUtc ?? x.CreatedOnUtc)
+                .ToList(),
+            BoughtItems = boughtItems
+        };
     }
 
     public async Task<int> CreateAsync(ProductCreateViewModel model, string createdByUserName, CancellationToken cancellationToken = default)
@@ -251,7 +303,25 @@ public sealed class ProductService : IProductService
         product.IsSold = true;
         product.SoldOnUtc = DateTime.UtcNow;
         product.BoughtByUserId = buyer.Id;
-        product.Quantity = 0;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> UndoBookingAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default)
+    {
+        Product? product = await _dbContext.Products
+            .Include(p => p.Seller)
+            .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+
+        if (product is null || !product.IsSold || !await CanManageAsync(product, requestedByUserName, cancellationToken))
+        {
+            return false;
+        }
+
+        product.IsSold = false;
+        product.SoldOnUtc = null;
+        product.BoughtByUserId = null;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;
@@ -279,5 +349,26 @@ public sealed class ProductService : IProductService
     private static decimal? NormalizePrice(ProductListingType listingType, decimal? rawPrice)
     {
         return listingType == ProductListingType.Donate ? 0 : rawPrice;
+    }
+
+    private static Expression<Func<Product, ProductActivityItemViewModel>> ToActivityItem()
+    {
+        return p => new ProductActivityItemViewModel
+        {
+            Id = p.Id,
+            Title = p.Title,
+            Category = p.Category,
+            ListingType = p.ListingType,
+            Price = p.Price,
+            ItemCondition = p.ItemCondition,
+            City = p.City,
+            SellerDisplayName = p.Seller.FullName,
+            SellerUserName = p.Seller.UserName,
+            BuyerUserName = p.BoughtByUser != null ? p.BoughtByUser.UserName : null,
+            IsApproved = p.IsApproved,
+            IsSold = p.IsSold,
+            CreatedOnUtc = p.CreatedOnUtc,
+            SoldOnUtc = p.SoldOnUtc
+        };
     }
 }

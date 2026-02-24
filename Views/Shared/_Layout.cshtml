@@ -40,6 +40,12 @@
                         <li class="nav-item">
                             <a class="nav-link @(currentController == "Products" && currentAction == "Create" ? "active" : string.Empty)" asp-controller="Products" asp-action="Create">List Item</a>
                         </li>
+                        @if (isAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @(currentController == "Products" && currentAction == "MyActivity" ? "active" : string.Empty)" asp-controller="Products" asp-action="MyActivity">My Activity</a>
+                            </li>
+                        }
                         @if (isAdmin)
                         {
                             <li class="nav-item">
