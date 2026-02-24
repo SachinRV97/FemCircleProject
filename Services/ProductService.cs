@@ -138,7 +138,7 @@ public sealed class ProductService : IProductService
             City = model.City.Trim(),
             ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl) ? null : model.ImageUrl.Trim(),
             SellerId = seller.Id,
-            IsApproved = true,
+            IsApproved = seller.IsAdmin,
             CreatedOnUtc = DateTime.UtcNow
         };
 
