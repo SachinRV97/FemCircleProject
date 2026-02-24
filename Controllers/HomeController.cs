@@ -1,32 +1,42 @@
-using FemCircleProject.Models;
-using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using FemCircleProject.Models;
+using FemCircleProject.Services;
+using FemCircleProject.ViewModels.Product;
+using Microsoft.AspNetCore.Mvc;
 
-namespace FemCircleProject.Controllers
+namespace FemCircleProject.Controllers;
+
+public sealed class HomeController : Controller
 {
-    public class HomeController : Controller
+    private readonly ILogger<HomeController> _logger;
+    private readonly IProductService _productService;
+
+    public HomeController(ILogger<HomeController> logger, IProductService productService)
     {
-        private readonly ILogger<HomeController> _logger;
+        _logger = logger;
+        _productService = productService;
+    }
 
-        public HomeController(ILogger<HomeController> logger)
+    [HttpGet]
+    public async Task<IActionResult> Index([FromQuery] ProductSearchViewModel search, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
         {
-            _logger = logger;
+            search = new ProductSearchViewModel();
         }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+        ProductIndexViewModel model = await _productService.BuildIndexAsync(search, cancellationToken);
+        return View(model);
+    }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+    public IActionResult Privacy()
+    {
+        return View();
+    }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }

@@ -12,7 +12,7 @@
         <a asp-action="Index" class="btn btn-outline-dark btn-sm">Back to Marketplace</a>
     </div>
 
-    <form asp-action="Create" method="post" novalidate>
+    <form asp-action="Create" method="post" enctype="multipart/form-data" novalidate>
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
         <div class="row g-3">
@@ -61,8 +61,14 @@
             </div>
             <div class="col-md-4">
                 <label asp-for="ImageUrl" class="form-label"></label>
-                <input asp-for="ImageUrl" class="form-control" />
+                <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
                 <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="ImageFile" class="form-label"></label>
+                <input asp-for="ImageFile" class="form-control" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                <div class="form-text">Optional. Upload JPG, PNG, or WEBP image (max 5 MB). Uploaded file will override Image URL.</div>
+                <span asp-validation-for="ImageFile" class="text-danger small"></span>
             </div>
         </div>
 

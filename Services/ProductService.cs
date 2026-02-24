@@ -72,6 +72,7 @@ public sealed class ProductService : IProductService
                 ItemCondition = p.ItemCondition,
                 SellerDisplayName = p.Seller.FullName,
                 City = p.City,
+                ImageUrl = p.ImageUrl,
                 PostedOnUtc = p.CreatedOnUtc
             })
             .ToListAsync(cancellationToken);

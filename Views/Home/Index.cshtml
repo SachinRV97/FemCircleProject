@@ -1,49 +1,130 @@
+@model ProductIndexViewModel
 @{
-    ViewData["Title"] = "Welcome";
+    ViewData["Title"] = "Home";
+
+    List<string> categories = Model.Products
+        .Select(x => x.Category)
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(x => x)
+        .ToList();
+
+    string BadgeClass(ProductListingType listingType)
+    {
+        return listingType switch
+        {
+            ProductListingType.Sell => "text-bg-primary",
+            ProductListingType.Donate => "badge-soft",
+            ProductListingType.Exchange => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
 }
 
-<section class="fem-hero mb-4 mb-md-5">
+<section class="amazon-hero mb-4">
     <div class="row g-4 align-items-center">
-        <div class="col-lg-7">
-            <p class="text-uppercase small fw-semibold text-secondary mb-2">Women-Only Marketplace</p>
-            <h1 class="display-5 fw-bold">Buy, sell, donate, and exchange in a safer community.</h1>
-            <p class="lead text-secondary mb-4">FemCircle is built to give women a verified, respectful, and practical space for trusted commerce.</p>
-            <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-primary px-4" asp-controller="Products" asp-action="Index">Explore Marketplace</a>
-                <a class="btn btn-outline-dark px-4" asp-controller="Account" asp-action="Register">Create Account</a>
-            </div>
+        <div class="col-lg-8">
+            <p class="small fw-semibold text-uppercase text-secondary mb-2">FemCircle Marketplace</p>
+            <h1 class="display-6 fw-bold mb-2">Shop from trusted women-led listings</h1>
+            <p class="text-secondary mb-0">Browse everything in one place. Search, filter, and discover products like a catalog experience.</p>
         </div>
-        <div class="col-lg-5">
-            <div class="fem-card p-3 p-md-4">
-                <h2 class="h5 fw-bold mb-3">Why FemCircle</h2>
-                <ul class="mb-0 small text-secondary">
-                    <li class="mb-2">Exclusive women-focused platform</li>
-                    <li class="mb-2">Admin moderation and role-based access</li>
-                    <li class="mb-2">Support for selling, donation, and exchange</li>
-                    <li>Sustainable reuse and strong community values</li>
-                </ul>
-            </div>
+        <div class="col-lg-4 text-lg-end">
+            <a asp-controller="Products" asp-action="Create" class="btn btn-primary px-4">Sell or Donate Item</a>
         </div>
     </div>
 </section>
 
-<section class="row g-3">
-    <div class="col-md-4">
-        <div class="fem-kpi h-100">
-            <div class="fem-kpi-label">Safe Community</div>
-            <p class="mb-0 text-secondary mt-2">Built for trusted interactions through a women-only platform model.</p>
+<section class="fem-card p-3 p-md-4 mb-4">
+    <form asp-action="Index" method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label for="Query" class="form-label small text-secondary">Search Products</label>
+            <input id="Query" name="Query" value="@Model.Search.Query" class="form-control" placeholder="Try: kurti, books, home decor" />
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="fem-kpi h-100">
-            <div class="fem-kpi-label">Smart Reuse</div>
-            <p class="mb-0 text-secondary mt-2">Reduce waste by donating and exchanging quality products.</p>
+        <div class="col-md-3">
+            <label for="Category" class="form-label small text-secondary">Category</label>
+            <input id="Category" name="Category" value="@Model.Search.Category" class="form-control" />
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="fem-kpi h-100">
-            <div class="fem-kpi-label">Simple Workflow</div>
-            <p class="mb-0 text-secondary mt-2">List products quickly and manage everything from one dashboard.</p>
+        <div class="col-md-2">
+            <label for="SortBy" class="form-label small text-secondary">Sort</label>
+            <select id="SortBy" name="SortBy" class="form-select">
+                <option value="latest" selected="@(Model.Search.SortBy == "latest" ? "selected" : null)">Latest</option>
+                <option value="price_asc" selected="@(Model.Search.SortBy == "price_asc" ? "selected" : null)">Price Low to High</option>
+                <option value="price_desc" selected="@(Model.Search.SortBy == "price_desc" ? "selected" : null)">Price High to Low</option>
+            </select>
         </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+    </form>
+</section>
+
+<section class="row g-4">
+    <aside class="col-lg-3">
+        <div class="fem-card p-3 p-md-4 sticky-md-top catalog-side">
+            <h2 class="h6 fw-bold mb-3">Browse Categories</h2>
+            <a asp-action="Index" class="catalog-link @(string.IsNullOrWhiteSpace(Model.Search.Category) ? "active" : string.Empty)">All Products</a>
+            @foreach (string category in categories)
+            {
+                <a asp-action="Index" asp-route-Category="@category" class="catalog-link @(string.Equals(Model.Search.Category, category, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)">
+                    @category
+                </a>
+            }
+        </div>
+    </aside>
+
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 fw-bold mb-0">All Products</h2>
+            <span class="small text-secondary">@Model.TotalCount item(s)</span>
+        </div>
+
+        @if (Model.Products.Count == 0)
+        {
+            <div class="empty-state">No products match your filter yet. Try a different search.</div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (ProductListItemViewModel item in Model.Products)
+                {
+                    <div class="col-sm-6 col-xl-4">
+                        <article class="card fem-card product-card amazon-card h-100">
+                            <a asp-controller="Products" asp-action="Details" asp-route-id="@item.Id" class="product-image-frame text-decoration-none">
+                                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" alt="@item.Title" class="product-thumb" />
+                                }
+                                else
+                                {
+                                    <div class="product-thumb-placeholder">No image</div>
+                                }
+                            </a>
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <span class="badge @BadgeClass(item.ListingType)">@item.ListingType</span>
+                                    <small class="text-secondary">@item.PostedOnUtc.ToLocalTime().ToString("dd MMM")</small>
+                                </div>
+                                <h3 class="card-title fw-semibold mb-1">@item.Title</h3>
+                                <p class="meta mb-2">@item.Category | @item.ItemCondition</p>
+                                <p class="meta mb-3">@item.City | @item.SellerDisplayName</p>
+                                <div class="mt-auto d-flex justify-content-between align-items-center">
+                                    <strong class="fs-5">
+                                        @if (item.Price.HasValue && item.Price.Value > 0)
+                                        {
+                                            @item.Price.Value.ToString("C")
+                                        }
+                                        else
+                                        {
+                                            <text>Free</text>
+                                        }
+                                    </strong>
+                                    <a asp-controller="Products" asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-dark btn-sm">View</a>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        }
     </div>
 </section>

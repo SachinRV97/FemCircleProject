@@ -9,10 +9,12 @@ namespace FemCircleProject.Controllers;
 public sealed class ProductsController : Controller
 {
     private readonly IProductService _productService;
+    private readonly IWebHostEnvironment _webHostEnvironment;
 
-    public ProductsController(IProductService productService)
+    public ProductsController(IProductService productService, IWebHostEnvironment webHostEnvironment)
     {
         _productService = productService;
+        _webHostEnvironment = webHostEnvironment;
     }
 
     [AllowAnonymous]
@@ -56,6 +58,18 @@ public sealed class ProductsController : Controller
             return View(model);
         }
 
+        (bool success, string? imagePath, string? errorMessage) = await SaveProductImageAsync(model.ImageFile, cancellationToken);
+        if (!success)
+        {
+            ModelState.AddModelError(nameof(model.ImageFile), errorMessage ?? "Image upload failed.");
+            return View(model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(imagePath))
+        {
+            model.ImageUrl = imagePath;
+        }
+
         string currentUser = User.Identity?.Name ?? string.Empty;
         int newId = await _productService.CreateAsync(model, currentUser, cancellationToken);
 
@@ -83,6 +97,18 @@ public sealed class ProductsController : Controller
             return View(model);
         }
 
+        (bool success, string? imagePath, string? errorMessage) = await SaveProductImageAsync(model.ImageFile, cancellationToken);
+        if (!success)
+        {
+            ModelState.AddModelError(nameof(model.ImageFile), errorMessage ?? "Image upload failed.");
+            return View(model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(imagePath))
+        {
+            model.ImageUrl = imagePath;
+        }
+
         bool updated = await _productService.UpdateAsync(model, User.Identity?.Name, cancellationToken);
         if (!updated)
         {
@@ -103,5 +129,43 @@ public sealed class ProductsController : Controller
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<(bool Success, string? Path, string? Error)> SaveProductImageAsync(IFormFile? imageFile, CancellationToken cancellationToken)
+    {
+        if (imageFile is null || imageFile.Length == 0)
+        {
+            return (true, null, null);
+        }
+
+        const long maxFileSize = 5 * 1024 * 1024;
+        if (imageFile.Length > maxFileSize)
+        {
+            return (false, null, "Image size must be 5 MB or less.");
+        }
+
+        string extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+        HashSet<string> allowedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".webp" };
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            return (false, null, "Only JPG, JPEG, PNG, and WEBP files are allowed.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_webHostEnvironment.WebRootPath))
+        {
+            return (false, null, "Server storage path is not available.");
+        }
+
+        string uploadFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "products");
+        Directory.CreateDirectory(uploadFolder);
+
+        string fileName = $"{Guid.NewGuid():N}{extension}";
+        string filePath = Path.Combine(uploadFolder, fileName);
+
+        await using FileStream stream = new(filePath, FileMode.Create);
+        await imageFile.CopyToAsync(stream, cancellationToken);
+
+        return (true, $"/uploads/products/{fileName}", null);
     }
 }

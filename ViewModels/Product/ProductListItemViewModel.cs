@@ -10,5 +10,6 @@ public sealed class ProductListItemViewModel
     public string ItemCondition { get; set; } = string.Empty;
     public string SellerDisplayName { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public DateTime PostedOnUtc { get; set; }
 }

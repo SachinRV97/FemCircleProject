@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace FemCircleProject.ViewModels.Product;
 
@@ -35,9 +36,12 @@ public class ProductCreateViewModel : IValidatableObject
     [StringLength(80)]
     public string City { get; set; } = string.Empty;
 
-    [Url]
+    [StringLength(600)]
     [Display(Name = "Image URL")]
     public string? ImageUrl { get; set; }
+
+    [Display(Name = "Upload Image")]
+    public IFormFile? ImageFile { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
@@ -49,6 +53,19 @@ public class ProductCreateViewModel : IValidatableObject
         if (ListingType == ProductListingType.Donate && Price.HasValue && Price.Value > 0)
         {
             yield return new ValidationResult("Donate listings must have no price or zero price.", new[] { nameof(Price) });
+        }
+
+        if (!string.IsNullOrWhiteSpace(ImageUrl))
+        {
+            string imageUrl = ImageUrl.Trim();
+            bool isAppRelative = imageUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase);
+            bool isHttpUrl = Uri.TryCreate(imageUrl, UriKind.Absolute, out Uri? parsedUri) &&
+                             (parsedUri.Scheme == Uri.UriSchemeHttp || parsedUri.Scheme == Uri.UriSchemeHttps);
+
+            if (!isAppRelative && !isHttpUrl)
+            {
+                yield return new ValidationResult("Image URL must be a valid http/https URL.", new[] { nameof(ImageUrl) });
+            }
         }
     }
 }

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FemCircleProject")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9e52cdaaa63453f363dd2e3dd481dd20a6ceb848")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0fa341f058201294955b349a0a8a2820178a6122")]
 [assembly: System.Reflection.AssemblyProductAttribute("FemCircleProject")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FemCircleProject")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

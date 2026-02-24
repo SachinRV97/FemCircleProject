@@ -12,7 +12,7 @@
         <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-dark btn-sm">Back to Details</a>
     </div>
 
-    <form asp-action="Edit" method="post" novalidate>
+    <form asp-action="Edit" method="post" enctype="multipart/form-data" novalidate>
         <input asp-for="Id" type="hidden" />
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
@@ -62,9 +62,22 @@
             </div>
             <div class="col-md-4">
                 <label asp-for="ImageUrl" class="form-label"></label>
-                <input asp-for="ImageUrl" class="form-control" />
+                <input asp-for="ImageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
                 <span asp-validation-for="ImageUrl" class="text-danger small"></span>
             </div>
+            <div class="col-md-8">
+                <label asp-for="ImageFile" class="form-label"></label>
+                <input asp-for="ImageFile" class="form-control" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                <div class="form-text">Optional. Upload a new image to replace the current one (max 5 MB).</div>
+                <span asp-validation-for="ImageFile" class="text-danger small"></span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+            {
+                <div class="col-12">
+                    <div class="small text-secondary mb-2">Current image</div>
+                    <img src="@Model.ImageUrl" alt="@Model.Title" class="img-thumbnail" style="max-height: 180px;" />
+                </div>
+            }
         </div>
 
         <div class="d-flex gap-2 mt-4">
