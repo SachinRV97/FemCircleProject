@@ -31,7 +31,18 @@ public sealed class AccountController : Controller
             return View(model);
         }
 
-        RegisterResult result = await _accountService.RegisterAsync(model, cancellationToken);
+        RegisterResult result;
+
+        try
+        {
+            result = await _accountService.RegisterAsync(model, cancellationToken);
+        }
+        catch
+        {
+            ModelState.AddModelError(string.Empty, "Registration failed due to an unexpected error. Please try again.");
+            return View(model);
+        }
+
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Registration failed.");

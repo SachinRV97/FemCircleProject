@@ -44,6 +44,10 @@
                 {
                     <span class="badge @(Model.IsBoughtByCurrentUser ? "text-bg-success" : "text-bg-danger")">@(Model.IsBoughtByCurrentUser ? "Bought" : "Sold")</span>
                 }
+                else if (Model.IsBookingPending)
+                {
+                    <span class="badge text-bg-warning">Booking Pending</span>
+                }
             </div>
             <h1 class="h2 fw-bold mb-2">@Model.Title</h1>
             <p class="text-secondary mb-4">@Model.Description</p>
@@ -72,34 +76,66 @@
                 <dd class="col-sm-8">@Model.City</dd>
                 <dt class="col-sm-4 text-secondary">Posted On</dt>
                 <dd class="col-sm-8">@Model.PostedOnUtc.ToLocalTime().ToString("dd MMM yyyy hh:mm tt")</dd>
-                @if (Model.IsSold)
+                @if (Model.IsSold || Model.IsBookingPending)
                 {
-                    <dt class="col-sm-4 text-secondary">Bought By</dt>
+                    <dt class="col-sm-4 text-secondary">Booked By</dt>
                     <dd class="col-sm-8">@(Model.BoughtByUserName ?? "Member")</dd>
-                    <dt class="col-sm-4 text-secondary">Sold On</dt>
-                    <dd class="col-sm-8">@Model.SoldOnUtc?.ToLocalTime().ToString("dd MMM yyyy hh:mm tt")</dd>
+                    @if (Model.IsSold)
+                    {
+                        <dt class="col-sm-4 text-secondary">Sold On</dt>
+                        <dd class="col-sm-8">@Model.SoldOnUtc?.ToLocalTime().ToString("dd MMM yyyy hh:mm tt")</dd>
+                    }
                 }
             </dl>
 
-            @if (!Model.IsSold && Model.CanBook)
+            @if (!Model.IsSold && !Model.IsBookingPending && Model.CanBook)
             {
                 <form asp-action="Book" asp-route-id="@Model.Id" method="post" class="mb-3">
-                    <button type="submit" class="btn btn-primary">Book Now</button>
+                    <button type="submit" class="btn btn-primary">Request Booking</button>
                 </form>
             }
 
-            @if (Model.IsSold)
+            @if (Model.IsBookingPending)
+            {
+                @if (Model.IsBookingPendingForCurrentUser)
+                {
+                    <div class="alert alert-info mb-3">
+                        Your booking request was sent. Waiting for owner approval.
+                    </div>
+                }
+                else if (Model.CanReviewBooking)
+                {
+                    <div class="alert alert-warning mb-3">
+                        Booking request received from @(Model.BoughtByUserName ?? "Member"). Approve or reject this buyer.
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <form asp-action="ApproveBooking" asp-route-id="@Model.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-success">Approve Buyer</button>
+                        </form>
+                        <form asp-action="RejectBooking" asp-route-id="@Model.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-outline-danger">Reject Buyer</button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning mb-3">
+                        This item already has a pending booking request and is temporarily unavailable.
+                    </div>
+                }
+            }
+            else if (Model.IsSold)
             {
                 @if (Model.IsBoughtByCurrentUser)
                 {
                     <div class="alert alert-success mb-3">
-                        You booked this item on @Model.SoldOnUtc?.ToLocalTime().ToString("dd MMM yyyy hh:mm tt").
+                        Owner approved your booking on @Model.SoldOnUtc?.ToLocalTime().ToString("dd MMM yyyy hh:mm tt").
                     </div>
                 }
                 else if (Model.CanUndoBooking)
                 {
                     <div class="alert alert-info mb-3">
-                        This item is booked by @(Model.BoughtByUserName ?? "Member"). You can undo booking to relist it.
+                        This item is sold to @(Model.BoughtByUserName ?? "Member"). You can relist by undoing sale.
                     </div>
                     <form asp-action="UndoBooking" asp-route-id="@Model.Id" method="post" class="mb-3">
                         <button type="submit" class="btn btn-outline-primary">Undo Booking & Relist</button>
@@ -113,7 +149,7 @@
                 }
             }
 
-            @if (!Model.IsSold && Model.CanManage)
+            @if (!Model.IsSold && !Model.IsBookingPending && Model.CanManage)
             {
                 <div class="d-flex flex-wrap gap-2">
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-dark">Edit</a>

@@ -42,8 +42,8 @@
     </div>
     <div class="col-6 col-lg-3">
         <div class="fem-kpi h-100">
-            <div class="fem-kpi-label">Sold / Booked</div>
-            <div class="fem-kpi-value">@Model.SoldListings.Count</div>
+            <div class="fem-kpi-label">Buyer Requests</div>
+            <div class="fem-kpi-value">@Model.PendingBuyerRequests.Count</div>
         </div>
     </div>
     <div class="col-6 col-lg-3">
@@ -57,8 +57,8 @@
 <section class="fem-card p-3 p-md-4 mb-4">
     <h2 class="h5 fw-bold mb-2">How Buying Works</h2>
     <p class="mb-0 text-secondary">
-        To buy/book an item: open <strong>Marketplace</strong> -> click <strong>View / Buy</strong> -> click <strong>Book Now</strong> on product details.
-        Once booked, the item moves to <strong>Bought By You</strong> and seller sees it under <strong>Sold / Booked</strong>.
+        To buy/book an item: open <strong>Marketplace</strong> -> click <strong>View / Buy</strong> -> click <strong>Request Booking</strong> on product details.
+        Owner can then <strong>Approve</strong> or <strong>Reject</strong> the request. Approved requests become sold and rejected requests return to marketplace.
     </p>
 </section>
 
@@ -136,12 +136,12 @@
 
 <section class="fem-card p-3 p-md-4 mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h5 fw-bold mb-0">Sold / Booked Listings</h2>
+        <h2 class="h5 fw-bold mb-0">Sold Listings</h2>
         <span class="small text-secondary">@Model.SoldListings.Count item(s)</span>
     </div>
     @if (Model.SoldListings.Count == 0)
     {
-        <div class="empty-state">No sold/booked listings yet.</div>
+        <div class="empty-state">No sold listings yet.</div>
     }
     else
     {
@@ -175,6 +175,47 @@
     }
 </section>
 
+<section class="fem-card p-3 p-md-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 fw-bold mb-0">Pending Buyer Requests</h2>
+        <span class="small text-secondary">@Model.PendingBuyerRequests.Count item(s)</span>
+    </div>
+    @if (Model.PendingBuyerRequests.Count == 0)
+    {
+        <div class="empty-state">No pending buyer requests.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (ProductActivityItemViewModel item in Model.PendingBuyerRequests)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <article class="card h-100 border-0 fem-card">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge text-bg-warning">Pending Buyer Approval</span>
+                                <small class="text-secondary">@FormatDate(item.CreatedOnUtc)</small>
+                            </div>
+                            <h3 class="h6 fw-bold mb-1">@item.Title</h3>
+                            <p class="meta mb-2">@item.Category | @item.ItemCondition</p>
+                            <p class="meta mb-3">Buyer: @(item.BuyerUserName ?? "Member")</p>
+                            <div class="mt-auto d-flex flex-wrap gap-2">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-dark btn-sm">View</a>
+                                <form asp-action="ApproveBooking" asp-route-id="@item.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                </form>
+                                <form asp-action="RejectBooking" asp-route-id="@item.Id" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            }
+        </div>
+    }
+</section>
+
 <section class="fem-card p-3 p-md-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h5 fw-bold mb-0">Bought By You</h2>
@@ -193,8 +234,8 @@
                     <article class="card h-100 border-0 fem-card">
                         <div class="card-body d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="badge text-bg-success">Bought</span>
-                                <small class="text-secondary">@(item.SoldOnUtc.HasValue ? FormatDate(item.SoldOnUtc.Value) : "-")</small>
+                                <span class="badge @(item.IsSold ? "text-bg-success" : "text-bg-warning")">@(item.IsSold ? "Bought" : "Pending Owner Approval")</span>
+                                <small class="text-secondary">@(item.SoldOnUtc.HasValue ? FormatDate(item.SoldOnUtc.Value) : FormatDate(item.CreatedOnUtc))</small>
                             </div>
                             <h3 class="h6 fw-bold mb-1">@item.Title</h3>
                             <p class="meta mb-2">@item.Category | @item.ItemCondition</p>

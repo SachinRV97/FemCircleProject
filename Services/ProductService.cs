@@ -19,7 +19,7 @@ public sealed class ProductService : IProductService
     {
         IQueryable<Product> query = _dbContext.Products
             .AsNoTracking()
-            .Where(p => p.IsApproved && !p.IsSold);
+            .Where(p => p.IsApproved && !p.IsSold && p.BoughtByUserId == null);
 
         if (!string.IsNullOrWhiteSpace(search.Query))
         {
@@ -72,6 +72,7 @@ public sealed class ProductService : IProductService
                 Price = p.Price,
                 ItemCondition = p.ItemCondition,
                 SellerDisplayName = p.Seller.FullName,
+                SellerUserName = p.Seller.UserName,
                 City = p.City,
                 ImageUrl = p.ImageUrl,
                 PostedOnUtc = p.CreatedOnUtc
@@ -149,11 +150,15 @@ public sealed class ProductService : IProductService
         {
             UserDisplayName = user.FullName,
             ActiveListings = ownedItems
-                .Where(x => x.IsApproved && !x.IsSold)
+                .Where(x => x.IsApproved && !x.IsSold && string.IsNullOrWhiteSpace(x.BuyerUserName))
                 .OrderByDescending(x => x.CreatedOnUtc)
                 .ToList(),
             PendingListings = ownedItems
                 .Where(x => !x.IsApproved)
+                .OrderByDescending(x => x.CreatedOnUtc)
+                .ToList(),
+            PendingBuyerRequests = ownedItems
+                .Where(x => x.IsApproved && !x.IsSold && !string.IsNullOrWhiteSpace(x.BuyerUserName))
                 .OrderByDescending(x => x.CreatedOnUtc)
                 .ToList(),
             SoldListings = ownedItems
@@ -295,14 +300,62 @@ public sealed class ProductService : IProductService
             return false;
         }
 
+        if (product.BoughtByUserId.HasValue)
+        {
+            return false;
+        }
+
         if (product.SellerId == buyer.Id)
+        {
+            return false;
+        }
+
+        product.IsSold = false;
+        product.SoldOnUtc = null;
+        product.BoughtByUserId = buyer.Id;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> ApproveBookingAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default)
+    {
+        Product? product = await _dbContext.Products
+            .Include(p => p.Seller)
+            .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+
+        if (product is null ||
+            !product.BoughtByUserId.HasValue ||
+            product.IsSold ||
+            !await CanManageAsync(product, requestedByUserName, cancellationToken))
         {
             return false;
         }
 
         product.IsSold = true;
         product.SoldOnUtc = DateTime.UtcNow;
-        product.BoughtByUserId = buyer.Id;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> RejectBookingAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default)
+    {
+        Product? product = await _dbContext.Products
+            .Include(p => p.Seller)
+            .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+
+        if (product is null ||
+            !product.BoughtByUserId.HasValue ||
+            product.IsSold ||
+            !await CanManageAsync(product, requestedByUserName, cancellationToken))
+        {
+            return false;
+        }
+
+        product.BoughtByUserId = null;
+        product.SoldOnUtc = null;
+        product.IsSold = false;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return true;

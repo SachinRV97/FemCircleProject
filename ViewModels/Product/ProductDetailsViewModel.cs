@@ -20,6 +20,9 @@ public sealed class ProductDetailsViewModel
     public DateTime? SoldOnUtc { get; set; }
     public string? BoughtByUserName { get; set; }
     public bool IsBoughtByCurrentUser { get; set; }
+    public bool IsBookingPending { get; set; }
+    public bool IsBookingPendingForCurrentUser { get; set; }
+    public bool CanReviewBooking { get; set; }
     public bool CanUndoBooking { get; set; }
     public DateTime PostedOnUtc { get; set; }
 }

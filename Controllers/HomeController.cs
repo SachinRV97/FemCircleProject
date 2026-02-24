@@ -26,6 +26,18 @@ public sealed class HomeController : Controller
         }
 
         ProductIndexViewModel model = await _productService.BuildIndexAsync(search, cancellationToken);
+
+        string? currentUserName = User.Identity?.Name;
+        if (!string.IsNullOrWhiteSpace(currentUserName))
+        {
+            List<ProductListItemViewModel> filtered = model.Products
+                .Where(p => !string.Equals(p.SellerUserName, currentUserName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            model.Products = filtered;
+            model.TotalCount = filtered.Count;
+        }
+
         return View(model);
     }
 

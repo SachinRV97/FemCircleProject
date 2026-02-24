@@ -22,6 +22,7 @@ public sealed class DatabaseSeeder
         await EnsureProductSchemaCompatibilityAsync(cancellationToken);
         await SeedUsersAsync(cancellationToken);
         await SeedProductsAsync(cancellationToken);
+        await NormalizeBookingApprovalDataAsync(cancellationToken);
     }
 
     private async Task EnsureProductSchemaCompatibilityAsync(CancellationToken cancellationToken)
@@ -69,6 +70,47 @@ public sealed class DatabaseSeeder
             BEGIN
                 CREATE INDEX [IX_Products_BoughtByUserId] ON [Products]([BoughtByUserId]);
             END;
+            """;
+
+        await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+    }
+
+    private async Task NormalizeBookingApprovalDataAsync(CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE p
+            SET
+                p.BoughtByUserId = NULL,
+                p.IsSold = 0,
+                p.SoldOnUtc = NULL
+            FROM [Products] p
+            LEFT JOIN [Users] buyer ON buyer.[Id] = p.[BoughtByUserId]
+            WHERE p.[BoughtByUserId] IS NOT NULL
+              AND (buyer.[Id] IS NULL OR p.[BoughtByUserId] = p.[SellerId]);
+
+            UPDATE [Products]
+            SET
+                [BoughtByUserId] = NULL,
+                [IsSold] = 0,
+                [SoldOnUtc] = NULL
+            WHERE [IsApproved] = 0
+              AND ([BoughtByUserId] IS NOT NULL OR [IsSold] = 1 OR [SoldOnUtc] IS NOT NULL);
+
+            UPDATE [Products]
+            SET
+                [IsSold] = 0,
+                [SoldOnUtc] = NULL
+            WHERE [IsSold] = 1
+              AND [BoughtByUserId] IS NULL;
+
+            UPDATE [Products]
+            SET [SoldOnUtc] = NULL
+            WHERE [IsSold] = 0
+              AND [SoldOnUtc] IS NOT NULL;
+
+            UPDATE [Products]
+            SET [SoldOnUtc] = COALESCE([SoldOnUtc], SYSUTCDATETIME())
+            WHERE [IsSold] = 1;
             """;
 
         await _dbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken);

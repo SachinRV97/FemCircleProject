@@ -18,7 +18,7 @@ public sealed class AdminService : IAdminService
     public async Task<AdminDashboardViewModel> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
         int totalUsers = await _dbContext.Users.CountAsync(cancellationToken);
-        int activeListings = await _dbContext.Products.CountAsync(p => p.IsApproved && !p.IsSold, cancellationToken);
+        int activeListings = await _dbContext.Products.CountAsync(p => p.IsApproved && !p.IsSold && p.BoughtByUserId == null, cancellationToken);
         int pendingModerationCount = await _dbContext.Products.CountAsync(p => !p.IsApproved, cancellationToken);
         int completedOrders = await _dbContext.Products.CountAsync(p => p.IsSold, cancellationToken);
 

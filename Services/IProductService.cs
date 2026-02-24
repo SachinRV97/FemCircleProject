@@ -12,5 +12,7 @@ public interface IProductService
     Task<bool> UpdateAsync(ProductEditViewModel model, string? requestedByUserName, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default);
     Task<bool> BookAsync(int productId, string? buyerUserName, CancellationToken cancellationToken = default);
+    Task<bool> ApproveBookingAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default);
+    Task<bool> RejectBookingAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default);
     Task<bool> UndoBookingAsync(int productId, string? requestedByUserName, CancellationToken cancellationToken = default);
 }

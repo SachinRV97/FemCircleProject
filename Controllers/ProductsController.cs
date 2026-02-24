@@ -27,6 +27,18 @@ public sealed class ProductsController : Controller
         }
 
         ProductIndexViewModel model = await _productService.BuildIndexAsync(search, cancellationToken);
+
+        string? currentUserName = User.Identity?.Name;
+        if (!string.IsNullOrWhiteSpace(currentUserName))
+        {
+            List<ProductListItemViewModel> filtered = model.Products
+                .Where(p => !string.Equals(p.SellerUserName, currentUserName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            model.Products = filtered;
+            model.TotalCount = filtered.Count;
+        }
+
         return View(model);
     }
 
@@ -47,9 +59,14 @@ public sealed class ProductsController : Controller
         bool isBuyer = !string.IsNullOrWhiteSpace(currentUserName) &&
                        !string.IsNullOrWhiteSpace(model.BoughtByUserName) &&
                        string.Equals(model.BoughtByUserName, currentUserName, StringComparison.OrdinalIgnoreCase);
+        bool isBookingPending = !model.IsSold && !string.IsNullOrWhiteSpace(model.BoughtByUserName);
+
         model.CanManage = isAdmin || isOwner;
         model.IsBoughtByCurrentUser = isBuyer;
-        model.CanBook = (User.Identity?.IsAuthenticated ?? false) && !isAdmin && !isOwner && !model.IsSold;
+        model.IsBookingPending = isBookingPending;
+        model.IsBookingPendingForCurrentUser = isBuyer && isBookingPending;
+        model.CanBook = (User.Identity?.IsAuthenticated ?? false) && !isAdmin && !isOwner && !model.IsSold && !isBookingPending;
+        model.CanReviewBooking = isOwner && isBookingPending;
         model.CanUndoBooking = model.IsSold && model.CanManage;
 
         return View(model);
@@ -78,8 +95,32 @@ public sealed class ProductsController : Controller
 
         bool success = await _productService.BookAsync(id, User.Identity?.Name, cancellationToken);
         TempData[success ? "ProductSuccess" : "ProductError"] = success
-            ? "Product booked successfully. It is now marked as sold."
-            : "Unable to book this product. It may already be sold or unavailable.";
+            ? "Booking request sent to owner. It will be visible after owner approval."
+            : "Unable to book this product. It may already have a pending booking or sold.";
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApproveBooking(int id, CancellationToken cancellationToken)
+    {
+        bool success = await _productService.ApproveBookingAsync(id, User.Identity?.Name, cancellationToken);
+        TempData[success ? "ProductSuccess" : "ProductError"] = success
+            ? "Booking approved. Product is now marked as sold."
+            : "Unable to approve booking for this product.";
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectBooking(int id, CancellationToken cancellationToken)
+    {
+        bool success = await _productService.RejectBookingAsync(id, User.Identity?.Name, cancellationToken);
+        TempData[success ? "ProductSuccess" : "ProductError"] = success
+            ? "Booking rejected. Product is available again."
+            : "Unable to reject booking for this product.";
 
         return RedirectToAction(nameof(Details), new { id });
     }

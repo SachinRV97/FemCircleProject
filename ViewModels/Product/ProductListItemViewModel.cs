@@ -9,6 +9,7 @@ public sealed class ProductListItemViewModel
     public decimal? Price { get; set; }
     public string ItemCondition { get; set; } = string.Empty;
     public string SellerDisplayName { get; set; } = string.Empty;
+    public string SellerUserName { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
     public DateTime PostedOnUtc { get; set; }
