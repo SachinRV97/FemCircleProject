@@ -40,6 +40,12 @@ public sealed class ProductsController : Controller
             return NotFound();
         }
 
+        string? currentUserName = User.Identity?.Name;
+        bool isAdmin = User.IsInRole("Admin");
+        bool isOwner = !string.IsNullOrWhiteSpace(currentUserName) &&
+                       string.Equals(model.SellerUserName, currentUserName, StringComparison.OrdinalIgnoreCase);
+        model.CanManage = isAdmin || isOwner;
+
         return View(model);
     }
 

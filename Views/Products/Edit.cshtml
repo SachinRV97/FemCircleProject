@@ -40,8 +40,11 @@
                 <span asp-validation-for="ListingType" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
-                <label asp-for="Price" class="form-label"></label>
-                <input asp-for="Price" class="form-control" id="priceInput" />
+                <label asp-for="Price" class="form-label">Price (INR)</label>
+                <div class="input-group">
+                    <span class="input-group-text">INR</span>
+                    <input asp-for="Price" class="form-control" id="priceInput" />
+                </div>
                 <span asp-validation-for="Price" class="text-danger small"></span>
             </div>
             <div class="col-md-4">

@@ -36,6 +36,12 @@ body.fem-body {
     color: #4b5563 !important;
 }
 
+.text-muted,
+.form-text,
+.link-secondary {
+    color: #4b5563 !important;
+}
+
 .bg-shape {
     position: fixed;
     pointer-events: none;
@@ -232,6 +238,15 @@ body.fem-body {
 .form-select {
     border-radius: 12px;
     border-color: #eecdc5;
+    color: var(--fc-ink);
+    background-color: #fff;
+}
+
+.input-group-text {
+    background: #fff3ed;
+    border-color: #eecdc5;
+    color: #7a2d2f;
+    font-weight: 700;
 }
 
 .form-control:focus,
@@ -265,6 +280,28 @@ body.fem-body {
     color: var(--fc-ink);
     background: transparent;
     border-color: var(--fc-line);
+}
+
+.fem-card,
+.fem-card h1,
+.fem-card h2,
+.fem-card h3,
+.fem-card h4,
+.fem-card h5,
+.fem-card h6,
+.fem-card p,
+.fem-card label,
+.fem-card li,
+.fem-card dt,
+.fem-card dd {
+    color: var(--fc-ink);
+}
+
+.fem-card .text-secondary,
+.fem-card .meta,
+.fem-card .fem-kpi-label,
+.fem-card .form-text {
+    color: #4b5563 !important;
 }
 
 .amazon-hero {

@@ -13,5 +13,7 @@ public sealed class ProductDetailsViewModel
     public string City { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
     public string SellerDisplayName { get; set; } = string.Empty;
+    public string SellerUserName { get; set; } = string.Empty;
+    public bool CanManage { get; set; }
     public DateTime PostedOnUtc { get; set; }
 }

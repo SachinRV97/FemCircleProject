@@ -1,6 +1,11 @@
 @model ProductDetailsViewModel
 @{
     ViewData["Title"] = "Product Details";
+
+    string FormatPrice(decimal? value)
+    {
+        return value.HasValue && value.Value > 0 ? $"INR {value.Value:0.##}" : "Free";
+    }
 }
 
 <div class="mb-3">
@@ -33,16 +38,7 @@
                 <div class="col-sm-6">
                     <div class="fem-kpi">
                         <div class="fem-kpi-label">Price</div>
-                        <div class="fem-kpi-value">
-                            @if (Model.Price.HasValue && Model.Price.Value > 0)
-                            {
-                                @Model.Price.Value.ToString("C")
-                            }
-                            else
-                            {
-                                <text>Free</text>
-                            }
-                        </div>
+                        <div class="fem-kpi-value">@FormatPrice(Model.Price)</div>
                     </div>
                 </div>
                 <div class="col-sm-6">
@@ -64,12 +60,15 @@
                 <dd class="col-sm-8">@Model.PostedOnUtc.ToLocalTime().ToString("dd MMM yyyy hh:mm tt")</dd>
             </dl>
 
-            <div class="d-flex flex-wrap gap-2">
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-dark">Edit</a>
-                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Delete this listing?');">Delete</button>
-                </form>
-            </div>
+            @if (Model.CanManage)
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-dark">Edit</a>
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Delete this listing?');">Delete</button>
+                    </form>
+                </div>
+            }
         </div>
     </div>
 </section>

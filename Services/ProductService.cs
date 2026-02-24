@@ -103,6 +103,7 @@ public sealed class ProductService : IProductService
                 City = p.City,
                 ImageUrl = p.ImageUrl,
                 SellerDisplayName = p.Seller.FullName,
+                SellerUserName = p.Seller.UserName,
                 PostedOnUtc = p.CreatedOnUtc
             })
             .FirstOrDefaultAsync(cancellationToken);
