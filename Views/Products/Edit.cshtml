@@ -1,0 +1,101 @@
+@model ProductEditViewModel
+@{
+    ViewData["Title"] = "Edit Listing";
+}
+
+<section class="fem-card p-4 p-md-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Edit Product</h1>
+            <p class="text-secondary mb-0">Update details and keep your listing accurate.</p>
+        </div>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-dark btn-sm">Back to Details</a>
+    </div>
+
+    <form asp-action="Edit" method="post" novalidate>
+        <input asp-for="Id" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="Title" class="form-label"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Category" class="form-label"></label>
+                <input asp-for="Category" class="form-control" />
+                <span asp-validation-for="Category" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                <span asp-validation-for="Description" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="ListingType" class="form-label"></label>
+                <select asp-for="ListingType" class="form-select" asp-items="Html.GetEnumSelectList<ProductListingType>()"></select>
+                <span asp-validation-for="ListingType" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Price" class="form-label"></label>
+                <input asp-for="Price" class="form-control" id="priceInput" />
+                <span asp-validation-for="Price" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ItemCondition" class="form-label"></label>
+                <input asp-for="ItemCondition" class="form-control" />
+                <span asp-validation-for="ItemCondition" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Quantity" class="form-label"></label>
+                <input asp-for="Quantity" class="form-control" />
+                <span asp-validation-for="Quantity" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="City" class="form-label"></label>
+                <input asp-for="City" class="form-control" />
+                <span asp-validation-for="City" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ImageUrl" class="form-label"></label>
+                <input asp-for="ImageUrl" class="form-control" />
+                <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-dark">Cancel</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var listingType = document.getElementById("ListingType");
+            var priceInput = document.getElementById("priceInput");
+
+            function syncPriceState() {
+                if (!listingType || !priceInput) {
+                    return;
+                }
+
+                var isDonate = listingType.value === "Donate";
+                if (isDonate) {
+                    priceInput.value = "0";
+                }
+            }
+
+            if (listingType) {
+                listingType.addEventListener("change", syncPriceState);
+                syncPriceState();
+            }
+        })();
+    </script>
+}

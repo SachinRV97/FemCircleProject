@@ -1,8 +1,49 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Welcome";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="fem-hero mb-4 mb-md-5">
+    <div class="row g-4 align-items-center">
+        <div class="col-lg-7">
+            <p class="text-uppercase small fw-semibold text-secondary mb-2">Women-Only Marketplace</p>
+            <h1 class="display-5 fw-bold">Buy, sell, donate, and exchange in a safer community.</h1>
+            <p class="lead text-secondary mb-4">FemCircle is built to give women a verified, respectful, and practical space for trusted commerce.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary px-4" asp-controller="Products" asp-action="Index">Explore Marketplace</a>
+                <a class="btn btn-outline-dark px-4" asp-controller="Account" asp-action="Register">Create Account</a>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="fem-card p-3 p-md-4">
+                <h2 class="h5 fw-bold mb-3">Why FemCircle</h2>
+                <ul class="mb-0 small text-secondary">
+                    <li class="mb-2">Exclusive women-focused platform</li>
+                    <li class="mb-2">Admin moderation and role-based access</li>
+                    <li class="mb-2">Support for selling, donation, and exchange</li>
+                    <li>Sustainable reuse and strong community values</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="row g-3">
+    <div class="col-md-4">
+        <div class="fem-kpi h-100">
+            <div class="fem-kpi-label">Safe Community</div>
+            <p class="mb-0 text-secondary mt-2">Built for trusted interactions through a women-only platform model.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="fem-kpi h-100">
+            <div class="fem-kpi-label">Smart Reuse</div>
+            <p class="mb-0 text-secondary mt-2">Reduce waste by donating and exchanging quality products.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="fem-kpi h-100">
+            <div class="fem-kpi-label">Simple Workflow</div>
+            <p class="mb-0 text-secondary mt-2">List products quickly and manage everything from one dashboard.</p>
+        </div>
+    </div>
+</section>

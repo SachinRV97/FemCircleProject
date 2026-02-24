@@ -1,0 +1,75 @@
+@model ProductDetailsViewModel
+@{
+    ViewData["Title"] = "Product Details";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="text-decoration-none small">&larr; Back to Marketplace</a>
+</div>
+
+<section class="fem-card p-3 p-md-4">
+    <div class="row g-4">
+        <div class="col-lg-5">
+            @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+            {
+                <img src="@Model.ImageUrl" alt="@Model.Title" class="img-fluid rounded-4 border" />
+            }
+            else
+            {
+                <div class="d-flex align-items-center justify-content-center rounded-4 border bg-light-subtle text-secondary" style="height: 300px;">
+                    No image available
+                </div>
+            }
+        </div>
+        <div class="col-lg-7">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <span class="badge text-bg-primary">@Model.ListingType</span>
+                <span class="badge text-bg-light border">@Model.Category</span>
+            </div>
+            <h1 class="h2 fw-bold mb-2">@Model.Title</h1>
+            <p class="text-secondary mb-4">@Model.Description</p>
+
+            <div class="row g-2 mb-4">
+                <div class="col-sm-6">
+                    <div class="fem-kpi">
+                        <div class="fem-kpi-label">Price</div>
+                        <div class="fem-kpi-value">
+                            @if (Model.Price.HasValue && Model.Price.Value > 0)
+                            {
+                                @Model.Price.Value.ToString("C")
+                            }
+                            else
+                            {
+                                <text>Free</text>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="fem-kpi">
+                        <div class="fem-kpi-label">Condition</div>
+                        <div class="fem-kpi-value fs-5">@Model.ItemCondition</div>
+                    </div>
+                </div>
+            </div>
+
+            <dl class="row small mb-4">
+                <dt class="col-sm-4 text-secondary">Quantity</dt>
+                <dd class="col-sm-8">@Model.Quantity</dd>
+                <dt class="col-sm-4 text-secondary">Seller</dt>
+                <dd class="col-sm-8">@Model.SellerDisplayName</dd>
+                <dt class="col-sm-4 text-secondary">City</dt>
+                <dd class="col-sm-8">@Model.City</dd>
+                <dt class="col-sm-4 text-secondary">Posted On</dt>
+                <dd class="col-sm-8">@Model.PostedOnUtc.ToLocalTime().ToString("dd MMM yyyy hh:mm tt")</dd>
+            </dl>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-dark">Edit</a>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Delete this listing?');">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>

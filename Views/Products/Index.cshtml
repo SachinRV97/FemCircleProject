@@ -1,0 +1,117 @@
+@model ProductIndexViewModel
+@{
+    ViewData["Title"] = "Marketplace";
+
+    string BadgeClass(ProductListingType listingType)
+    {
+        return listingType switch
+        {
+            ProductListingType.Sell => "text-bg-primary",
+            ProductListingType.Donate => "badge-soft",
+            ProductListingType.Exchange => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
+}
+
+<section class="fem-hero mb-4">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+        <div>
+            <h1 class="display-6 fw-bold mb-2">Marketplace Listings</h1>
+            <p class="text-secondary mb-0">Find trusted products shared by community members.</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary px-4">List New Product</a>
+    </div>
+</section>
+
+<section class="fem-card p-3 p-md-4 mb-4">
+    <form asp-action="Index" method="get" novalidate>
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="search-grid">
+            <div>
+                <label for="Query" class="form-label small text-secondary">Keyword</label>
+                <input id="Query" name="Query" value="@Model.Search.Query" class="form-control" placeholder="Search title or description" />
+            </div>
+            <div>
+                <label for="Category" class="form-label small text-secondary">Category</label>
+                <input id="Category" name="Category" value="@Model.Search.Category" class="form-control" />
+            </div>
+            <div>
+                <label for="ListingType" class="form-label small text-secondary">Type</label>
+                <select id="ListingType" name="ListingType" class="form-select">
+                    <option value="">All</option>
+                    @foreach (ProductListingType type in Enum.GetValues<ProductListingType>())
+                    {
+                        <option value="@type" selected="@(Model.Search.ListingType == type ? "selected" : null)">@type</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="MinPrice" class="form-label small text-secondary">Min Price</label>
+                <input id="MinPrice" name="MinPrice" value="@Model.Search.MinPrice" class="form-control" type="number" step="0.01" min="0" />
+            </div>
+            <div>
+                <label for="MaxPrice" class="form-label small text-secondary">Max Price</label>
+                <input id="MaxPrice" name="MaxPrice" value="@Model.Search.MaxPrice" class="form-control" type="number" step="0.01" min="0" />
+            </div>
+            <div>
+                <label for="SortBy" class="form-label small text-secondary">Sort</label>
+                <select id="SortBy" name="SortBy" class="form-select">
+                    <option value="latest" selected="@(Model.Search.SortBy == "latest" ? "selected" : null)">Latest</option>
+                    <option value="price_asc" selected="@(Model.Search.SortBy == "price_asc" ? "selected" : null)">Price Low to High</option>
+                    <option value="price_desc" selected="@(Model.Search.SortBy == "price_desc" ? "selected" : null)">Price High to Low</option>
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+        </div>
+    </form>
+</section>
+
+<section>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 fw-bold mb-0">Results</h2>
+        <span class="small text-secondary">@Model.TotalCount listing(s)</span>
+    </div>
+
+    @if (Model.Products.Count == 0)
+    {
+        <div class="empty-state">No listings found. Try changing filters or add your own listing.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (ProductListItemViewModel item in Model.Products)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <article class="card fem-card product-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <span class="badge @BadgeClass(item.ListingType)">@item.ListingType</span>
+                                <small class="text-secondary">@item.PostedOnUtc.ToLocalTime().ToString("dd MMM yyyy")</small>
+                            </div>
+                            <h3 class="card-title fw-semibold">@item.Title</h3>
+                            <p class="meta mb-2">@item.Category | @item.ItemCondition</p>
+                            <p class="meta mb-3">By @item.SellerDisplayName in @item.City</p>
+                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                <strong class="fs-5">
+                                    @if (item.Price.HasValue && item.Price.Value > 0)
+                                    {
+                                        @item.Price.Value.ToString("C")
+                                    }
+                                    else
+                                    {
+                                        <text>Free</text>
+                                    }
+                                </strong>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-dark btn-sm">View Details</a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            }
+        </div>
+    }
+</section>

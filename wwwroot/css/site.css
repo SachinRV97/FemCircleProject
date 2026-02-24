@@ -1,22 +1,214 @@
+:root {
+    --fc-bg: #fffaf8;
+    --fc-panel: #ffffff;
+    --fc-primary: #d2474b;
+    --fc-primary-soft: #fdf0ea;
+    --fc-ink: #1f2937;
+    --fc-muted: #6b7280;
+    --fc-line: #f1d8d2;
+    --fc-radius: 18px;
+    --fc-shadow: 0 16px 36px rgba(139, 56, 60, 0.12);
+}
+
 html {
-  font-size: 14px;
+    font-size: 15px;
+    min-height: 100%;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+body.fem-body {
+    position: relative;
+    min-height: 100vh;
+    margin: 0;
+    color: var(--fc-ink);
+    background:
+        radial-gradient(circle at 10% -10%, #ffe5d9 0%, transparent 30%),
+        radial-gradient(circle at 90% 0%, #fde2e4 0%, transparent 35%),
+        var(--fc-bg);
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+.bg-shape {
+    position: fixed;
+    pointer-events: none;
+    z-index: -1;
+    border-radius: 999px;
+    filter: blur(4px);
 }
 
-body {
-  margin-bottom: 60px;
+.bg-shape-1 {
+    width: 260px;
+    height: 260px;
+    top: 25%;
+    left: -140px;
+    background: #ffd7c8;
+    opacity: 0.35;
+}
+
+.bg-shape-2 {
+    width: 320px;
+    height: 320px;
+    right: -170px;
+    top: 48%;
+    background: #f9d3cf;
+    opacity: 0.35;
+}
+
+.fem-navbar {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+}
+
+.brand-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+.brand-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e96d66, #ca3f45);
+    box-shadow: 0 0 0 5px rgba(210, 71, 75, 0.16);
+}
+
+.navbar .nav-link {
+    color: var(--fc-ink);
+    font-weight: 500;
+    border-radius: 999px;
+    padding-inline: 0.85rem;
+}
+
+.navbar .nav-link.active,
+.navbar .nav-link:hover {
+    color: var(--fc-primary);
+    background-color: var(--fc-primary-soft);
+}
+
+.btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--fc-primary);
+    --bs-btn-border-color: var(--fc-primary);
+    --bs-btn-hover-bg: #b63f42;
+    --bs-btn-hover-border-color: #b63f42;
+    --bs-btn-active-bg: #9b3638;
+    --bs-btn-active-border-color: #9b3638;
+}
+
+.fem-card {
+    background: var(--fc-panel);
+    border: 1px solid var(--fc-line);
+    border-radius: var(--fc-radius);
+    box-shadow: var(--fc-shadow);
+}
+
+.fem-hero {
+    background: linear-gradient(140deg, #fff2eb 0%, #ffffff 45%, #fce9e6 100%);
+    border: 1px solid #f7d5cc;
+    border-radius: 24px;
+    padding: 2rem;
+}
+
+.fem-hero h1,
+.fem-hero h2 {
+    line-height: 1.2;
+    margin-bottom: 0.8rem;
+}
+
+.fem-kpi {
+    border-radius: 16px;
+    border: 1px solid var(--fc-line);
+    background: #fff;
+    padding: 1rem 1.1rem;
+}
+
+.fem-kpi-label {
+    font-size: 0.82rem;
+    color: var(--fc-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.fem-kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.search-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+@media (min-width: 768px) {
+    .search-grid {
+        grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr 1fr auto;
+        align-items: end;
+    }
+}
+
+.product-card .card-title {
+    font-size: 1.02rem;
+    margin-bottom: 0.45rem;
+}
+
+.product-card .meta {
+    color: var(--fc-muted);
+    font-size: 0.9rem;
+}
+
+.table-responsive {
+    border-radius: 14px;
+    border: 1px solid var(--fc-line);
+}
+
+.table > :not(caption) > * > * {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+}
+
+.auth-shell {
+    max-width: 980px;
+    margin-inline: auto;
+}
+
+.auth-side {
+    background: linear-gradient(145deg, #ffe9df, #ffe2dc);
+    border-radius: 20px;
+    padding: 1.4rem;
+    border: 1px solid #f6cdc2;
+}
+
+.form-control,
+.form-select {
+    border-radius: 12px;
+    border-color: #eecdc5;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #d97f76;
+    box-shadow: 0 0 0 0.22rem rgba(210, 71, 75, 0.15);
+}
+
+.badge-soft {
+    background: #fde7dd;
+    color: #a53d36;
+    border: 1px solid #f8cec0;
+}
+
+.empty-state {
+    border: 1px dashed #e9bfb3;
+    border-radius: 14px;
+    background: #fff8f5;
+    color: #8a6460;
+    padding: 1.4rem;
+    text-align: center;
 }

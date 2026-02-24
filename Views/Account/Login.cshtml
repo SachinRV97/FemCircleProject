@@ -1,0 +1,59 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<section class="auth-shell">
+    <div class="row g-4 align-items-stretch">
+        <div class="col-lg-7">
+            <div class="fem-card p-4 p-md-5 h-100">
+                <h1 class="h3 fw-bold mb-1">Welcome Back</h1>
+                <p class="text-secondary mb-4">Login to continue buying, selling, donating, or exchanging within FemCircle.</p>
+
+                <form asp-action="Login" method="post" novalidate>
+                    <input asp-for="ReturnUrl" type="hidden" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="UsernameOrEmail" class="form-label"></label>
+                        <input asp-for="UsernameOrEmail" class="form-control form-control-lg" />
+                        <span asp-validation-for="UsernameOrEmail" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" class="form-control form-control-lg" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label"></label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Login</button>
+                        <a asp-action="Register" class="btn btn-outline-dark">Create New Account</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <aside class="auth-side h-100">
+                <h2 class="h5 fw-bold mb-3">Trusted by Community</h2>
+                <p class="text-secondary mb-3">FemCircle focuses on safe and respectful interactions for women through a dedicated marketplace environment.</p>
+                <ul class="small text-secondary mb-0">
+                    <li class="mb-2">Verified accounts and role-based access</li>
+                    <li class="mb-2">Direct access to products listed by community members</li>
+                    <li>Easy listing and order workflow for daily use</li>
+                </ul>
+            </aside>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

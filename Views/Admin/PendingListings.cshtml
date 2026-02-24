@@ -1,0 +1,69 @@
+@model IReadOnlyList<AdminProductSummaryViewModel>
+@{
+    ViewData["Title"] = "Pending Listings";
+
+    string BadgeClass(ProductListingType listingType)
+    {
+        return listingType switch
+        {
+            ProductListingType.Sell => "text-bg-primary",
+            ProductListingType.Donate => "badge-soft",
+            ProductListingType.Exchange => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
+}
+
+<section class="fem-card p-3 p-md-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+        <div>
+            <h1 class="h4 fw-bold mb-1">Pending Listings</h1>
+            <p class="text-secondary mb-0">Moderation queue for products awaiting approval.</p>
+        </div>
+        <a asp-action="Dashboard" class="btn btn-outline-dark btn-sm">Back to Dashboard</a>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">No pending listings.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>Seller</th>
+                        <th>Created</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (AdminProductSummaryViewModel item in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@item.Title</td>
+                            <td>@item.Category</td>
+                            <td><span class="badge @BadgeClass(item.ListingType)">@item.ListingType</span></td>
+                            <td>@item.SellerUserName</td>
+                            <td>@item.CreatedOnUtc.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (item.IsApproved)
+                                {
+                                    <span class="badge text-bg-success">Approved</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-warning">Pending</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

@@ -1,0 +1,127 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+
+    string BadgeClass(ProductListingType listingType)
+    {
+        return listingType switch
+        {
+            ProductListingType.Sell => "text-bg-primary",
+            ProductListingType.Donate => "badge-soft",
+            ProductListingType.Exchange => "text-bg-dark",
+            _ => "text-bg-secondary"
+        };
+    }
+}
+
+<section class="fem-hero mb-4">
+    <h1 class="display-6 fw-bold mb-2">Admin Dashboard</h1>
+    <p class="text-secondary mb-0">Track platform activity, listing flow, and new member growth.</p>
+</section>
+
+<section class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="fem-kpi h-100">
+            <div class="fem-kpi-label">Total Users</div>
+            <div class="fem-kpi-value">@Model.TotalUsers</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="fem-kpi h-100">
+            <div class="fem-kpi-label">Active Listings</div>
+            <div class="fem-kpi-value">@Model.ActiveListings</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="fem-kpi h-100">
+            <div class="fem-kpi-label">Pending Moderation</div>
+            <div class="fem-kpi-value">@Model.PendingModerationCount</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="fem-kpi h-100">
+            <div class="fem-kpi-label">Completed Orders</div>
+            <div class="fem-kpi-value">@Model.CompletedOrders</div>
+        </div>
+    </div>
+</section>
+
+<section class="row g-4">
+    <div class="col-lg-7">
+        <div class="fem-card p-3 p-md-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 fw-bold mb-0">Recent Listings</h2>
+                <a asp-action="PendingListings" class="btn btn-outline-dark btn-sm">View Pending</a>
+            </div>
+
+            @if (Model.RecentListings.Count == 0)
+            {
+                <div class="empty-state">No recent listing records.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Seller</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (AdminProductSummaryViewModel item in Model.RecentListings)
+                            {
+                                <tr>
+                                    <td>@item.Title</td>
+                                    <td><span class="badge @BadgeClass(item.ListingType)">@item.ListingType</span></td>
+                                    <td>@item.SellerUserName</td>
+                                    <td>
+                                        @if (item.IsApproved)
+                                        {
+                                            <span class="badge text-bg-success">Approved</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-warning">Pending</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="fem-card p-3 p-md-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 fw-bold mb-0">New Users</h2>
+                <a asp-action="Users" class="btn btn-outline-dark btn-sm">Manage Users</a>
+            </div>
+
+            @if (Model.NewlyRegisteredUsers.Count == 0)
+            {
+                <div class="empty-state">No new users to display.</div>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (AdminUserSummaryViewModel user in Model.NewlyRegisteredUsers)
+                    {
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">@user.FullName</div>
+                                <small class="text-secondary">@user.Email</small>
+                            </div>
+                            <small class="text-secondary">@user.RegisteredOnUtc.ToLocalTime().ToString("dd MMM")</small>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</section>
